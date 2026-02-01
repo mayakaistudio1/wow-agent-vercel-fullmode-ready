@@ -1,18 +1,25 @@
 import {
   LIVEAVATAR_BASE_URL,
-  LIVEAVATAR_AVATAR_ID,
-  LIVEAVATAR_VOICE_ID,
-  LIVEAVATAR_CONTEXT_ID,
+  AVATAR_ID,
+  VOICE_ID,
+  CONTEXT_ID,
   getApiKey,
   readJson,
-} from "./_config";
+} from "./_config.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
   try {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      return res
+        .status(500)
+        .json({ ok: false, error: "Missing LIVEAVATAR_API_KEY" });
+    }
+
     const body = await readJson(req);
     const language =
       typeof body?.language === "string" && body.language.trim()
@@ -20,11 +27,12 @@ export default async function handler(req: any, res: any) {
         : "ru";
 
     const payload = {
-      avatar_id: LIVEAVATAR_AVATAR_ID,
-      language,
-      voice: {
-        voice_id: LIVEAVATAR_VOICE_ID,
-        context_id: LIVEAVATAR_CONTEXT_ID,
+      mode: "FULL",
+      avatar_id: AVATAR_ID,
+      avatar_persona: {
+        voice_id: VOICE_ID,
+        context_id: CONTEXT_ID,
+        language,
       },
     };
 
@@ -33,7 +41,7 @@ export default async function handler(req: any, res: any) {
       headers: {
         "content-type": "application/json",
         accept: "application/json",
-        "X-API-KEY": getApiKey(),
+        "X-API-KEY": apiKey,
       },
       body: JSON.stringify(payload),
     });
@@ -42,12 +50,25 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       return res
         .status(response.status)
-        .json({ error: "Token generation failed", details: text });
+        .json({
+          ok: false,
+          error: "Token generation failed",
+          details: text,
+        });
     }
 
-    return res.status(200).json(JSON.parse(text));
+    const json = JSON.parse(text);
+    const session_id = json?.data?.session_id ?? json?.session_id;
+    const session_token = json?.data?.session_token ?? json?.session_token;
+
+    return res.status(200).json({
+      ...json,
+      session_id,
+      session_token,
+    });
   } catch (error: any) {
     return res.status(500).json({
+      ok: false,
       error: "Token generation failed",
       details: error?.message || String(error),
     });
