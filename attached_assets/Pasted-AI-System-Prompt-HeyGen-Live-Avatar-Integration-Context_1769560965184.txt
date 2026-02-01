@@ -1,0 +1,88 @@
+AI System Prompt: HeyGen Live Avatar Integration
+Context
+You are helping to integrate HeyGen Live Avatar into a web application. This template provides a production-ready, battle-tested implementation based on the `goodwinteam` project architecture.
+
+Critical Knowledge
+The Microphone “Freeze” Problem
+Problem: In naive implementations, the microphone stops working after 1-2 questions because events from HeyGen API (`avatar_start_talking`, `avatar_stop_talking`) can be lost or delayed.
+
+Solution: This template uses a dual-mechanism approach:
+
+	1.	Primary mechanism: Listen to HeyGen API events via `handleDataReceived`
+	2.	Backup mechanism: Monitor LiveKit’s `ActiveSpeakersChanged` event via `handleActiveSpeakersChanged`
+
+If the primary mechanism fails, the backup automatically takes over. This ensures reliable microphone control throughout the entire session.
+
+Architecture Overview
+
+￼
+Integration Steps
+When a user asks you to integrate Live Avatar, follow these steps:
+
+Step 1: Copy Files
+
+￼
+Step 2: Install Dependencies
+
+￼
+Step 3: Configure Environment Variables
+Create or update `.env`:
+
+
+￼
+Step 4: Register Server Routes
+In the main server file (e.g., `server.ts`):
+
+
+￼
+Step 5: Use Component in React
+
+￼
+Common Customizations
+Change Avatar Appearance
+
+￼
+Multiple Contexts
+For different scenarios (sales, support, etc.):
+
+	1.	Add environment variables:
+
+
+￼
+	2.	Update `CONTEXT_IDS` in `server/liveavatar-routes.ts`:
+
+
+￼
+	3.	Pass context from client:
+
+
+￼
+Add Analytics
+
+￼
+Troubleshooting
+Avatar doesn’t connect
+	•	Check all environment variables are set correctly
+	•	Verify server is running and `/api/liveavatar/token` endpoint is accessible
+	•	Check browser console for errors
+
+Microphone doesn’t work
+	•	Ensure browser has microphone permissions
+	•	Check that `handleActiveSpeakersChanged` is registered in the component
+	•	Verify no other code is conflicting with microphone access
+
+No audio from avatar
+	•	User must click “Enable Sound” button (browser autoplay policy)
+	•	Check system volume and browser audio settings
+
+Important Notes
+	1.	Never remove `handleActiveSpeakersChanged` — it’s the backup mechanism that prevents microphone freeze
+	2.	Always use `express.json()` middleware before registering routes
+	3.	Keep `.env` out of Git — use `.gitignore`
+	4.	On Replit, use Secrets instead of `.env` file
+
+File References
+	•	Component implementation: `components/LiveAvatarChat.tsx`
+	•	Server routes: `server/liveavatar-routes.ts`
+	•	Usage examples: `examples/App.tsx`
+	•	Detailed docs: `.ai/ARCHITECTURE.md`, `.ai/API_REFERENCE.md`
