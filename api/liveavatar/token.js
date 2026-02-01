@@ -1,15 +1,20 @@
 import {
+  AVATAR_ID,
+  CONTEXT_ID,
   LIVEAVATAR_BASE_URL,
-  LIVEAVATAR_AVATAR_ID,
-  LIVEAVATAR_VOICE_ID,
-  LIVEAVATAR_CONTEXT_ID,
+  VOICE_ID,
   getApiKey,
   readJson,
-} from "./_config";
+} from "./_config.js";
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return res.status(500).json({ ok: false, error: "Missing LIVEAVATAR_API_KEY" });
   }
 
   try {
@@ -20,11 +25,12 @@ export default async function handler(req: any, res: any) {
         : "ru";
 
     const payload = {
-      avatar_id: LIVEAVATAR_AVATAR_ID,
+      mode: "full",
+      avatar_id: AVATAR_ID,
       language,
       voice: {
-        voice_id: LIVEAVATAR_VOICE_ID,
-        context_id: LIVEAVATAR_CONTEXT_ID,
+        voice_id: VOICE_ID,
+        context_id: CONTEXT_ID,
       },
     };
 
@@ -33,7 +39,7 @@ export default async function handler(req: any, res: any) {
       headers: {
         "content-type": "application/json",
         accept: "application/json",
-        "X-API-KEY": getApiKey(),
+        "X-API-KEY": apiKey,
       },
       body: JSON.stringify(payload),
     });
@@ -42,12 +48,21 @@ export default async function handler(req: any, res: any) {
     if (!response.ok) {
       return res
         .status(response.status)
-        .json({ error: "Token generation failed", details: text });
+        .json({ ok: false, error: "Token generation failed", details: text });
     }
 
-    return res.status(200).json(JSON.parse(text));
-  } catch (error: any) {
+    try {
+      return res.status(200).json(JSON.parse(text));
+    } catch (error) {
+      return res.status(502).json({
+        ok: false,
+        error: "Invalid response from LiveAvatar",
+        details: error?.message || text,
+      });
+    }
+  } catch (error) {
     return res.status(500).json({
+      ok: false,
       error: "Token generation failed",
       details: error?.message || String(error),
     });
